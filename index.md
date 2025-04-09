@@ -9,7 +9,7 @@ hero:
   actions:
     - theme: For Porject
       text: For Porject
-      link: /Note/O&M/README.md
+      link: /Note/README.md
     - theme: For Me
       text: For Me
       link: https://github.com/FonzoSong
