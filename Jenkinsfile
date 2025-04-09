@@ -1,10 +1,19 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'node:20.19.0'
+            args '-u root'  // 如果需要使用 root 权限安装依赖，可设置此项
+        }
+    }
     stages {
         // 安装依赖
+        
         stage('Install Dependencies') {
             steps {
-                sh 'npm install -D vitepress'
+                sh 'node -v'
+                sh 'npm config set registry https://registry.npmmirror.com'
+                sh 'npm install'
+                sh 'npm run docs:build'
             }
         }
 
@@ -20,13 +29,6 @@ pipeline {
             steps {
                 script {
                     
-                    def dockerFileContent = """
-                    FROM nginx:latest
-                    COPY .vitepress/dist /usr/share/nginx/html
-                    RUN chown -R nginx:nginx /usr/share/nginx/html
-                    EXPOSE 80
-                    """
-                    writeFile file: 'Dockerfile', text: dockerFileContent
                     // 定义镜像名称和标签（根据需要自定义）
                     def dockerImage = 'note-webapp:latest'
                     
