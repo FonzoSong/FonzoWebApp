@@ -1,58 +1,57 @@
+pipeline {
     agent any
+
     stages {
         // 安装依赖
         stage('Install Dependencies') {
             steps {
-                sh 'node -v'
+                sh 'node -v' // 可选：输出Node.js版本
                 sh 'npm config set registry https://registry.npmmirror.com'
                 sh 'npm install'
             }
         }
+
         // 构建文档
         stage('Build Docs') {
             steps {
                 sh 'npm run docs:build'
             }
         }
+
         // 构建 Docker 镜像
         stage('Build Docker Image') {
             steps {
                 script {
-                    // 定义镜像名称和标签（可根据需求修改）
-                    def dockerImage = 'note-webapp:latest'
-                    // 构建镜像
-                    sh "docker build -t ${dockerImage} -f Dockerfile ."
+                    // 使用构建号作为镜像标签，确保唯一性
+                    def dockerImage = "note-webapp:${env.BUILD_NUMBER}"
+                    // 使用docker.build DSL构建镜像
+                    docker.build(dockerImage, '-f Dockerfile .')
                 }
             }
         }
+
         // 推送 Docker 镜像到阿里云容器镜像仓库
         stage('Push Docker Image') {
             steps {
                 script {
-                    // 定义阿里云镜像仓库地址、命名空间和镜像标签
                     def registry = 'crpi-bel3qt8z5v9ykzbp.cn-beijing.personal.cr.aliyuncs.com'
                     def namespace = 'fonzo_dev'
-                    def imageTag = 'note-webapp:latest'
-                    // 使用凭证登录阿里云
-                    withCredentials([usernamePassword(
-                        credentialsId: 'aliyun-credentials-id', // 替换为你在 Jenkins 中配置的凭证 ID
-                        usernameVariable: 'ALIYUN_USER',
-                        passwordVariable: 'ALIYUN_PASS'
-                    )]) {
-                        sh "docker login -u ${env.ALIYUN_USER} -p ${env.ALIYUN_PASS} ${registry}"
-                    }
-                    // 为镜像打 tag
+                    def imageTag = "note-webapp:${env.BUILD_NUMBER}"
                     def fullImageTag = "${registry}/${namespace}/${imageTag}"
-                    sh "docker tag ${imageTag} ${fullImageTag}"
-                    // 推送镜像
-                    sh "docker push ${fullImageTag}"
+
+                    // 使用docker.withRegistry简化登录和推送
+                    docker.withRegistry("https://${registry}", 'aliyun-credentials-id') {
+                        // 推送镜像（自动处理登录和标签）
+                        docker.image(imageTag).push()
+                    }
                 }
             }
         }
     }
+
     post {
         always {
-            // 清理临时 Docker 镜像
+            // 清理临时镜像（保留当前构建的镜像）
             sh 'docker image prune -f'
         }
     }
