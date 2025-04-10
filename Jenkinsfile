@@ -1,4 +1,3 @@
-pipeline {
     agent any
     stages {
         // 安装依赖
@@ -6,24 +5,23 @@ pipeline {
             steps {
                 sh 'node -v'
                 sh 'npm config set registry https://registry.npmmirror.com'
-                // 添加 sudo 以解决可能的权限问题（如写入 node_modules）
-                sh 'sudo npm install'
+                sh 'npm install'
             }
         }
         // 构建文档
         stage('Build Docs') {
             steps {
-                // 添加 sudo 以确保构建命令有足够权限
-                sh 'sudo npm run docs:build'
+                sh 'npm run docs:build'
             }
         }
         // 构建 Docker 镜像
         stage('Build Docker Image') {
             steps {
                 script {
+                    // 定义镜像名称和标签（可根据需求修改）
                     def dockerImage = 'note-webapp:latest'
-                    // 添加 sudo 以确保 Docker 命令有权限
-                    sh "sudo docker build -t ${dockerImage} -f Dockerfile ."
+                    // 构建镜像
+                    sh "docker build -t ${dockerImage} -f Dockerfile ."
                 }
             }
         }
@@ -31,31 +29,31 @@ pipeline {
         stage('Push Docker Image') {
             steps {
                 script {
+                    // 定义阿里云镜像仓库地址、命名空间和镜像标签
                     def registry = 'crpi-bel3qt8z5v9ykzbp.cn-beijing.personal.cr.aliyuncs.com'
                     def namespace = 'fonzo_dev'
                     def imageTag = 'note-webapp:latest'
-
-                    // 使用凭证登录阿里云（无需 sudo，因为 docker login 是用户权限操作）
+                    // 使用凭证登录阿里云
                     withCredentials([usernamePassword(
-                        credentialsId: 'aliyun-credentials-id',
+                        credentialsId: 'aliyun-credentials-id', // 替换为你在 Jenkins 中配置的凭证 ID
                         usernameVariable: 'ALIYUN_USER',
                         passwordVariable: 'ALIYUN_PASS'
                     )]) {
                         sh "docker login -u ${env.ALIYUN_USER} -p ${env.ALIYUN_PASS} ${registry}"
                     }
-
+                    // 为镜像打 tag
                     def fullImageTag = "${registry}/${namespace}/${imageTag}"
-                    // 添加 sudo 以确保 Docker 命令有权限
-                    sh "sudo docker tag ${imageTag} ${fullImageTag}"
-                    sh "sudo docker push ${fullImageImageTag}"
+                    sh "docker tag ${imageTag} ${fullImageTag}"
+                    // 推送镜像
+                    sh "docker push ${fullImageTag}"
                 }
             }
         }
     }
     post {
         always {
-            // 添加 sudo 以确保清理权限
-            sh 'sudo docker image prune -f'
+            // 清理临时 Docker 镜像
+            sh 'docker image prune -f'
         }
     }
 }
