@@ -6,6 +6,8 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 sh 'node -v' // 可选：输出Node.js版本
+                sh 'ls -l'
+                sh 'pwd'
                 sh 'npm install'
             }
         }
@@ -36,7 +38,7 @@ pipeline {
                     def registry = 'crpi-bel3qt8z5v9ykzbp.cn-beijing.personal.cr.aliyuncs.com'
                     def namespace = 'fonzo_dev'
                     def imageTag = "latest"  // 使用latest作为镜像标签
-                    def fullImageTag = "${registry}/${namespace}/${imageTag}"
+                    def fullImageTag = "${registry}/${namespace}/note-webapp:${imageTag}"
 
                     // 使用 Jenkins 存储的凭证 aliyun-credentials-id 来登录
                     withCredentials([usernamePassword(credentialsId: 'aliyun-credentials-id', usernameVariable: 'ALIYUN_DOCKER_USERNAME', passwordVariable: 'ALIYUN_DOCKER_PASSWORD')]) {
