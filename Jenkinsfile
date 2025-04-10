@@ -6,9 +6,7 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 sh 'node -v' // 可选：输出Node.js版本
-                sh 'ls -l'
-                sh 'pwd'
-                sh 'npm install -g --no-bin-link'
+                sh 'npm install'
             }
         }
 
@@ -37,13 +35,21 @@ pipeline {
                 script {
                     def registry = 'crpi-bel3qt8z5v9ykzbp.cn-beijing.personal.cr.aliyuncs.com'
                     def namespace = 'fonzo_dev'
-                    def imageTag = "note-webapp:${env.BUILD_NUMBER}"
+                    def imageTag = "latest"  // 使用latest作为镜像标签
                     def fullImageTag = "${registry}/${namespace}/${imageTag}"
 
-                    // 使用docker.withRegistry简化登录和推送
-                    docker.withRegistry("https://${registry}", 'aliyun-credentials-id') {
-                        // 推送镜像（自动处理登录和标签）
-                        docker.image(imageTag).push()
+                    // 使用 Jenkins 存储的凭证 aliyun-credentials-id 来登录
+                    withCredentials([usernamePassword(credentialsId: 'aliyun-credentials-id', usernameVariable: 'ALIYUN_DOCKER_USERNAME', passwordVariable: 'ALIYUN_DOCKER_PASSWORD')]) {
+                        // 登录到阿里云容器镜像仓库
+                        sh """
+                        echo \$ALIYUN_DOCKER_PASSWORD | docker login --username=\$ALIYUN_DOCKER_USERNAME --password-stdin ${registry}
+                        """
+
+                        // 给镜像打标签
+                        sh "docker tag note-webapp:${env.BUILD_NUMBER} ${fullImageTag}"
+
+                        // 推送镜像
+                        sh "docker push ${fullImageTag}"
                     }
                 }
             }
