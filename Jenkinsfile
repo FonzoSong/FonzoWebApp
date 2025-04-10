@@ -6,7 +6,6 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 sh 'node -v' // 可选：输出Node.js版本
-                sh 'npm config set registry https://registry.npmmirror.com'
                 sh 'ls -l'
                 sh 'pwd'
                 sh 'npm install'
