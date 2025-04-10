@@ -8,7 +8,7 @@ pipeline {
                 sh 'node -v' // 可选：输出Node.js版本
                 sh 'ls -l'
                 sh 'pwd'
-                sh 'npm install'
+                sh 'npm install -g --no-bin-link'
             }
         }
 
