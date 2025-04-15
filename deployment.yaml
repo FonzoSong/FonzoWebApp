@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: note-webapp-deployment
+  namespace: noteweb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: note-webapp
+  template:
+    metadata:
+      labels:
+        app: note-webapp
+    spec:
+      containers:
+      - name: note-webapp
+        image: crpi-bel3qt8z5v9ykzbp.cn-beijing.personal.cr.aliyuncs.com/fonzo_dev/note-webapp:latest
+        ports:
+        - containerPort: 80  
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+      imagePullSecrets:
+      - name: registry-credentials
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: note-webapp-service
+  namespace: noteweb
+spec:
+  selector:
+    app: note-webapp
+  ports:
+    - protocol: TCP
+      port: 80          
+      targetPort: 80    
+      nodePort: 32009   
+  type: NodePort
